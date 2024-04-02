@@ -5,7 +5,7 @@ image:"/posts/Library_Dashboard_Image.jpg"
 tags: [Tableau, Data Viz]
 ---
 
-This is a Tableau Dashboard that investigates the changing trends within Book Publishing from 2001 until 2016, utilising The CONLIT Dataset of Contemporary Literature!
+This is a Tableau Dashboard that investigates the changing trends within Book Publishing from 2001 until 2016, utilising The CONLIT Dataset of Contemporary Literature! The link to this data can be found here: https://openhumanitiesdata.metajnl.com/articles/10.5334/johd.88
 
 Reading has always been a great hobby of mine, especially classic science fiction stories in the vain of Philip K Dick, Ursula K Le Guin and Sherri S Tepper among others. I'm in the process of writing a science fiction novel and so wanted to see how publishing trends have changed over the years.
 
