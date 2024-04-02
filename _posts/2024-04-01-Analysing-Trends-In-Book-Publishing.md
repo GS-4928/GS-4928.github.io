@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Analysing Trends in Book Publishing Data: 2001 - 2016
+title: Analaysing Book Publishing Trends from 2001-2016
 image: "/posts/Library_Dashboard_Image.jpg"
 tags: [Tableau, Data Viz]
 ---
