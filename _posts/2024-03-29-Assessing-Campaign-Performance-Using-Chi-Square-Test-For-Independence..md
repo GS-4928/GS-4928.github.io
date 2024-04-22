@@ -46,8 +46,8 @@ From the *campaign_data* table in the client database, we isolated customers tha
 
 We set out our Hypotheses and Acceptance Criteria for the test, as follows:
 
-**Null Hypothesis, $H_0$:** There is no relationship between mailer type and signup rate. They are independent.
-**Alternate Hypothesis, $H_A$:** There is a relationship between mailer type and signup rate. They are not independent.
+**Null Hypothesis:** There is no relationship between mailer type and signup rate. They are independent.
+**Alternate Hypothesis:** There is a relationship between mailer type and signup rate. They are not independent.
 **Acceptance Criteria:** 0.05
 
 As a requirement of the Chi-Square Test For Independence, we aggregated this data down to a 2x2 matrix for *signup_flag* by *mailer_type* and fed this into the Chi Square algorithm (using the *scipy* library) to calculate the Chi-Square Statistic, p-value, Degrees of Freedom, and expected values
@@ -103,13 +103,13 @@ There are many different scenarios we can run Hypothesis Tests on, and they all 
 
 <br>
 
-**The Null Hypothesis ($H_0$)**
+**The Null Hypothesis**
 
 In any Hypothesis Test, we start with the Null Hypothesis. The Null Hypothesis is where we state our initial viewpoint, and in statistics, and specifically Hypothesis Testing, our initial viewpoint is always that the result is purely by chance or that there is no relationship or association between two outcomes or groups
 
 <br>
 
-**The Alternate Hypothesis ($H_A$)**
+**The Alternate Hypothesis**
 
 The aim of the Hypothesis Test is to look for evidence to support or reject the Null Hypothesis.  If we reject the Null Hypothesis, that would mean we’d be supporting the Alternate Hypothesis.  The Alternate Hypothesis is essentially the opposite viewpoint to the Null Hypothesis - that the result is *not* by chance, or that there *is* a relationship between two outcomes or groups
 
