@@ -1,19 +1,16 @@
 ---
 layout: post
 title: Utilising Computer Vision to Track Player Movement in a Football Match
-image: "/posts/dl-search-engine-title-img.png"
+image: "/posts/football-pitch-title.jpg"
 tags: [CV2, YOLO, Data Science, Computer Vision, Python, OOP]
 ---
 
-In this project we utilise 
+After completing projects based on Neural Networks and how they can be leveraged for image classification, I wanted to work on further Computer Vision tasks! This project is the result of that desire; leveraging open source python libraries to track and produce stats on players in a clip from a football match. Utilising Object Detection will allow for the location of instances of specific objects within an image or video, in this case football players, referees and the football itself.
+
 # Table of contents
 
 - [00. Project Overview](#overview-main)
-    - [Context](#overview-context)
-    - [Actions](#overview-actions)
-    - [Results](#overview-results)
-    - [Growth/Next Steps](#overview-growth)
-- [01. Sample Data Overview](#sample-data-overview)
+- [01. Data Overview](#data-overview)
 - [02. Transfer Learning Overview](#transfer-learning-overview)
 - [03. Setting Up VGG16](#vgg16-setup)
 - [04. Image Preprocessing & Featurisation](#image-preprocessing)
@@ -24,64 +21,18 @@ ___
 
 # Project Overview  <a name="overview-main"></a>
 
-### Context <a name="overview-context"></a>
+I wanted to learn more about object detection as a field of computer vision, seeing how it has evolved and what some of the current approaches are. As I'm a long suffering football fan, I thought that I would combine the two of these into a project!
 
-Our client had been analysing their customer feedback, and one thing in particular came up a number of times.
+We move through different data sets within this project, starting off with a kaggle data set of Bundesliga clips before settling on a labelled dataset from RoboFlow, an open source community for all things computer vision. Once our data is decided upon, we can utilise it to train up our YOLOv5 model, a model purpose built for real time object detection and the precision of its detections.
 
-Their customers are aware that they have a great range of competitively priced products in the clothing section - but have said they are struggling to find the products they are looking for on the website.
-
-They are often buying much more expensive products, and then later finding out that we actually stocked a very similar, but lower-priced alternative.
-
-Based upon our work for them using a Convolutional Neural Network, they want to know if we can build out something that could be applied here.
+After the model has been trained, I wanted to.
 <br>
 <br>
-### Actions <a name="overview-actions"></a>
-
-Here we implement the pre-trained VGG16 network. Instead of the final MaxPooling layer, we we add in a **Global Average Pooling Layer** at the end of the VGG16 architecture meaning the output of the network will be a single vector of numeric information rather than many arrays.  We use "feature vector" to compare image similarity.
-
-We pre-process our 300 base-set images, and then pass them through the VGG16 network to extract their feature vectors.  We store these in an object for use when a search image is fed in.
-
-We pass in a search image, apply the same preprocessing steps and again extract the feature vector.
-
-We use Cosine Similarity to compare the search feature vector with all base-set feature vectors, returned the N smallest values.  These represent our "most similar" images - the ones that would be returned to the customer.
-
-<br>
-<br>
-
-### Results <a name="overview-results"></a>
-
-We test two different images, and plot the search results along with the cosine similarity scores.  You can see these in the dedicated section below.
-
-<br>
-<br>
-### Discussion, Growth & Next Steps <a name="overview-growth"></a>
-
-The way we have coded this up is very much for the "proof of concept".  In practice we would definitely have the last section of the code (where we submit a search) isolated, and running from all of the saved objects that we need - we wouldn't include it in a single script like we have here.
-
-Also, rather than having to fit the Nearest Neighbours to our *feature_vector_store* each time a search is submitted, we could store that object as well.
-
-When applying this in production, we also may want to code up a script that easily adds or removes images from the feature store.  The products that are available in the clients store would be changing all the time, so we'd want a nice easy way to add new feature vectors to the feature_vector_store object - and also potentially a way to remove search results coming back if that product was out of stock, or no longer part of the suite of products that were sold.
-
-Most likely, in production, this would just return a list of filepaths that the client's website could then pull forward as required - the matplotlib code is just for us to see it in action manually!
-
-This was tested only in one category, we would want to test on a broader array of categories - most likely having a saved network for each to avoid irrelevant predictions.
-
-We only looked at Cosine Similarity here, it would be interesting to investigate other distance metrics.
-
-It would be beneficial to come up with a way to quantify the quality of the search results.  This could come from customer feedback, or from click-through rates on the site.
-
-Here we utilised VGG16. It would be worthwhile testing other available pre-trained networks such as ResNet, Inception, and the DenseNet networks.
-
-<br>
-<br>
-
 ___
 
-# Sample Data Overview  <a name="sample-data-overview"></a>
+# Data Overview  <a name="data-overview"></a>
 
-For our proof on concept we are working in only one section of the client's product base, women's shoes.
-
-We have been provided with images of the 300 shoes that are currently available to purchase.  A random selection of 18 of these can be seen in the image below.
+There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches.
 
 <br>
 ![alt text](/img/posts/search-engine-image-examples.png "Deep Learning Search Engine - Image Examples")
