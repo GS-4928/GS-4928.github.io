@@ -25,17 +25,15 @@ I wanted to learn more about object detection as a field of computer vision, see
 
 We move through different data sets within this project, starting off with a kaggle data set of Bundesliga clips before settling on a labelled dataset from RoboFlow, an open source community for all things computer vision. Once our data is decided upon, we can utilise it to train up our YOLOv5 model, a model purpose built for real time object detection and the precision of its detections.
 
-After the model has been trained, I wanted to.
+After the model has been trained, we can begin to write some classes and functions to successfully turn a blank video clip of a football match into a fully annotated, gameified visual experience!
+
 <br>
 <br>
 ___
 
 # Data Overview  <a name="data-overview"></a>
 
-There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches.
-
-<br>
-![alt text](/img/posts/search-engine-image-examples.png "Deep Learning Search Engine - Image Examples")
+There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches. The initial exploration of this data showed a potential problem - none of the potential objects are labelled within it! When running our model.
 
 <br>
 We will need to extract & capture the "features" of this base image set, and compare them to the "features" found in any given search image.  The images with the closest match will be returned to the customer!
