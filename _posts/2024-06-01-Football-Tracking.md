@@ -13,7 +13,7 @@ After completing projects based on Neural Networks and how they can be leveraged
 - [01. Data Overview](#data-overview)
 - [02. Object Detection Overview](#object-detection-overview)
 - [03. Setting Up YOLO Instance](#YOLO-setup)
-- [04. Image Preprocessing & Featurisation](#image-preprocessing)
+- [04. Creating our Python Script](#script-creation)
 - [05. Execute Search](#execute-search)
 - [06. Discussion, Growth & Next Steps](#growth-next-steps)
 
@@ -34,11 +34,12 @@ ___
 
 There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches. The initial exploration of this data showed a potential problem - none of the potential objects are labelled within it! For basic purposes this is fine, but as we expand the capabilities of our scripting we will want to introduce some tracking features that require an associated tracking id to be present with each object.
 
-To this end, we will utilise **RoboFlow** to choose and download a similar dataset for us to work on, the difference being that this new dataset will have each object of interest tagged for ease of tracking later on down the line.
+To this end, we will utilise **RoboFlow** to choose and download a similar dataset for us to train our model on, the difference being that this new dataset will have each object of interest tagged for ease of tracking later on down the line.
 
 Enough about the data for now, we need to explore what exactly Object Detection is!
 <br>
 ___
+
 # Object Detection Overview  <a name="object-detection-overview"></a>
 
 <br>
@@ -73,7 +74,6 @@ Deep Learning, specifically the arrival of Convolutional Neural Networks and its
 For this project, we will be utilising a One-Shot Detector model called YOLO, a multi-object detection algorithm.
 
 ___
-<br>
 
 # Setting Up YOLO Instance  <a name="YOLO-setup"></a>
 
@@ -105,7 +105,7 @@ results = model.predict(input_video, save=True)
 
 <br>
 
-The above code demonstrates how simple it can be to get started with a YOLO model, utilising the ultralytics python library. The next step from here is to download the desired, labelled dataset from roboflow and pass it through to train our model
+The above code demonstrates how simple it can be to get started with a YOLO model, utilising the ultralytics python library. The next step from here is to download the desired, labelled dataset from roboflow and pass it through to train our model. The training set expects our data to be in a specific form, sitting in a folder of the same name as its current folder otherwise it will crash when attempting to run!
 
 ```python
 
@@ -131,16 +131,27 @@ for i,j in enumerate(data_forms):
 ```
 
 <br>
-Our data comes with a .yaml file that provides important information on the class breakdown of the training, testing and validation datasets in use
+Our data comes with a .yaml file that provides important information on the class breakdown of the training, testing and validation datasets in use. With our data in the expected place now, we can begin to train our model.
 
+```python
+#train our model, with various inputs to tweak as desired
+!yolo task=detect mode=train model=yolov5lu.pt data={dataset.location}/data.yaml epochs=100 imgsz=416 cache
+```
+The above command can be broken down into its constituent parts:
+1. task = detect, we are setting up our model to do some detection work
+2. mode = train, this incoming data will be used to train our model
+3. model = yolov5l.pt, the model is selected (the large version of YOLOv5)
+4. data = {dataset.location}/data.yaml, we specify where our data is as well as the associated configuration file to allow for classes and bounding information to be incorporated
+5. epoch = 100, we decide how many iterations through the data we want our model to make
+6. imgsz = 640, we can set the size of our input images
+
+The output of this training, besides annotated images, is a pair of models labelled 'best' and 'last' that contain the best performing run nad the last performed run respectively. If we feed our training video into this best model of ours, we can immediately see some differences in performance and identification!
+<br>
 ___
-<br>
-# Image Preprocessing & Featurisation <a name="image-preprocessing"></a>
 
-<br>
-#### Helper Functions
+# Creating our Python Script <a name="script-creation"></a>
 
-Here we create two useful functions, one for pre-processing images prior to entering the network, and the second for featurising the image, in other words passing the image through the VGG16 network and receiving the output, a single vector of 512 numeric values.
+To be able to both input and outpt video files for training through our 
 
 ```python
 
