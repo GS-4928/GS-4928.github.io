@@ -11,8 +11,8 @@ After completing projects based on Neural Networks and how they can be leveraged
 
 - [00. Project Overview](#overview-main)
 - [01. Data Overview](#data-overview)
-- [02. Transfer Learning Overview](#transfer-learning-overview)
-- [03. Setting Up VGG16](#vgg16-setup)
+- [02. Object Detection Overview](#object-detection-overview)
+- [03. Setting Up YOLO Instance](#YOLO-setup)
 - [04. Image Preprocessing & Featurisation](#image-preprocessing)
 - [05. Execute Search](#execute-search)
 - [06. Discussion, Growth & Next Steps](#growth-next-steps)
@@ -33,7 +33,11 @@ ___
 
 # Data Overview  <a name="data-overview"></a>
 
-There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches. The initial exploration of this data showed a potential problem - none of the potential objects are labelled within it! When running our model, this means that 
+There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches. The initial exploration of this data showed a potential problem - none of the potential objects are labelled within it! For basic purposes this is fine, but as we expand the capabilities of our scripting we will want to introduce some tracking features that require an associated tracking id to be present with each object.
+
+To this end, we will utilise **RoboFlow** to choose and download a similar dataset for us to work on, the difference being that this new dataset will have each object of interest tagged for ease of tracking later on down the line.
+
+Enough about the data for now, we need to explore what exactly Object Detection is!
 
 <br>
 We will need to extract & capture the "features" of this base image set, and compare them to the "features" found in any given search image.  The images with the closest match will be returned to the customer!
@@ -41,132 +45,99 @@ We will need to extract & capture the "features" of this base image set, and com
 ___
 <br>
 
-# Transfer Learning Overview  <a name="transfer-learning-overview"></a>
+# Object Detection Overview  <a name="object-detection-overview"></a>
 
 <br>
 #### Overview
 
-Transfer Learning is an extremely powerful way for us to utilise pre-built, and pre-trained networks, and apply these in a clever way to solve *our* specific Deep Learning based tasks.  It consists of taking features learned on one problem, and leveraging them on a new, similar problem!
-
-For image based tasks this often means using all the the *pre-learned* features from a large network, so all of the convolutional filter values and feature maps, and instead of using it to predict what the network was originally designed for, piggybacking it, and training just the last part for some other task.
-
-The hope is, that the features which have already been learned will be good enough to differentiate between our new classes, and we’ll save a whole lot of training time (and be able to utilise a network architecture that has potentially already been optimised).
-
-For our Fruit Classification task we will be utilising a famous network known as **VGG16**.  This was designed back in 2014, but even by todays standards is a fairly heft network.  It was trained on the famous *ImageNet* dataset, with over a million images across one thousand different image classes. Everything from goldfish to cauliflowers to bottles of wine, to scuba divers!
+Object Detection is a very popular task within the realm of computer vision. In its simplest form, Object Detection seeks to analyse images or videos and locate instances of specific objects within these images/videos. For example, footage from a camera set up within a nature reserve to monitor activity within the space could be analysed with object detection to see the different kinds of animals coming and going from the area! MOre importantly for the purpose of this project, object detection isn't limited to identifying one object at a time and in fact multiple methods have been developed to enable the identification of multiple objects within the same frame.
 
 <br>
-![alt text](/img/posts/vgg16-architecture.png "VGG16 Architecture")
+![alt text](/img/posts/example-detection.png "An Example of Object Detection")
+<br>
+
+In the above image we can see object detection at work in a more rudimentary fashion, being capable of identifying animals within an image even if it can't directly tell us that these are lions. Traditionally there were three steps to Object Detection:
+1. Target Region Selection - The process of bounding objects within an image. Originally this was done through trial and error for each class until an average bounding size could be achieved for that class.
+2. Feature Extraction - With the objects bounded, the make up of each class was then analysed to pull out features that would describe each class, through tools like Scale-Invariant Feature Transform (SIFT) or Histogram of Oriented Gradients (HOG), although these tools could struggle with noise, illumination and image scale when extracting features.
+3. Classification/Regression - With features now extracted for each class from the training set, classification would be carried out on the bounded objects within the images to predict which class each belonged to, through the use of Random Forest models or Support Vector Machines. Regression is also employed to ascertain the specific locations of each bounding box for each object.
+
+This traditional approach suffered from a multitude of problems, including being computationally expensive, difficult to fine tune and being prone to overfitting. This changed with the advent of Deep Learning.
 
 <br>
-The VGG16 network won the 2014 ImageNet competition, meaning that it predicted more accurately than any other model on that set of images (although this has now been surpassed).
+#### Current Types of Object Detection
 
-If we can get our hands on the fully trained VGG16 model object, built to differentiate between all of those one thousand different image classes, the features that are contained in the layer prior to flattening will be very rich, and could be very useful for predicting all sorts of other images too without having to (a) re-train this entire architecture, which would be computationally, very expensive or (b) having to come up with our very own complex architecture, which we know can take a lot of trial and error to get right!
+Deep Learning, specifically the arrival of Convolutional Neural Networks and its progeny, has served to fill in some of the gaps around generalisation and computational expense. There are two main methods of object detection available: Two-Stage Detectors and One-Shot Detectors.
 
-All the hard work has been done, we just want to "transfer" those "learnings" to our own problem space.
+**Two-Stage Detectors** work through Region Proposal Networks. After an initial pass of the entire image through a lightweight CNN to generate feature maps, Regions of Interest (ROIs) are established through these feature maps fed in via the convolutional layers preceeding the pooling layer instead of focusing on a granular pixel-level approach, allowing for a much faster generation of ROIs. This was first seen within Faster Recursive Convolutional Neural Networks (Faster RCNN). Once these ROIs are produced, regression and classification are carried out to find the bounding box coordinates and the predicted class respectively. This consitutes the two step process.
+
+**One-Stage Detectors** bypass Region Proposal Networks and Regions of Interest. Instead, the network predicts the fixed amount of probabilities at a given time from an image and directly performs regression/classification to map a bounding box and class probability onto image pixels. This process is incredibly fast but does have the potential to lose accuracy.
 
 <br>
-#### Nuanced Application
+![alt text](/img/posts/Two-stage-vs-one-stage-object-detection-models-3179193683.png "Two-Stage vs One-Stage Detection: Architecture")
+<br>
 
-When using Transfer Learning for image classification tasks, we often import the architecture up to final Max Pooling layer, prior to flattening & the Dense Layers & Output Layer.  We use the frozen parameter values from the bottom of the network, and then get instead of the final Max Pooling layer
-
-With this approach, the final MaxPooling layer will be in the form of a number of pooled feature maps.  For our task here however, we don't want that. We instead want a *single set* of numbers to represent these features and thus we add in a **Global Average Pooling Layer** at the end of the VGG16 architecture meaning the output of the network will be a single array of numeric information rather than many arrays.
+For this project, we will be utilising a One-Shot Detector model called YOLO, a multi-object detection algorithm.
 
 ___
 <br>
 
-# Setting Up VGG16  <a name="vgg16-setup"></a>
+# Setting Up YOLO Instance  <a name="YOLO-setup"></a>
 
-Keras makes the use of VGG16 very easy. We download the bottom of the VGG16 network (everything up to the Dense Layers) and then add a parameter to ensure that the final layer is not a Max Pooling Layer but instead a *Global Max Pooling Layer*
+YOLO - an acronym for You Only Look Once - was first introduced in 2015 by the team of  Joseph Redmon, Santosh Divvala, Ross Girshick, and Ali Farhadi. It is all based around Precision, specifically the mean average precision. Precision in statistical terms is the ratio of true positive predictions to the total number of positive data points within a dataset.
 
-In the code below, we:
+Architecturally, YOLO has 3 distinct layers to it: 
+1. A CNN **backbone** to produce assorted feature maps from the visual data.
+2. A combined set of pooling layers that integrate and blend the different feature maps together to achieve a more generalised set of features, called a **neck**.
+3. The **Head**, a dense output layer that takes in the generalised features alongside predictions for the bounding boxes within the visual sample. Classification of the class within the bounding box is carried out alongside regression for the features and bounding box position, resulting in a transformed image or video effectively annotated with class information.
 
-* Import the required packaages
-* Set up the image parameters required for VGG16
-* Load in VGG16 with Global Average Pooling
-* Save the network architecture & weights for use in search engine
+YOLO outputs four pieces of information in two possible formats. The first format is the x and y coordinates of the subject within an image and the width and height of the bounding box that surrounds that subject. The second format is known as x, y, x, y and outputs the x and y coordinates of the top left of the bounding box along witht he coordinates for the bottom right of the same bounding box.
 
 <br>
+
+```python
+#import required libraries
+from ultralytics import YOLO
+
+#define file path for input video
+input_video = '...'
+
+#instantiate model, can choose from small, medium, large, extra large and nano
+model = YOLO('yolov8x')
+
+#save our results to an object for ease of access and analysis
+results = model.predict(input_video, save=True)
+
+```
+
+<br>
+
+The above code demonstrates how simple it can be to get started with a YOLO model, utilising the ultralytics python library. The next step from here is to download the desired, labelled dataset from roboflow and pass it through to train our model
+
 ```python
 
 # import the required python libraries
-from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-import numpy as np
-from os import listdir
-from sklearn.neighbors import NearestNeighbors
-import matplotlib.pyplot as plt
-import pickle
+from roboflow import RoboFlow
+import shutil
 
-# VGG16 image parameters
-img_width = 224
-img_height = 224
-num_channels = 3
+# Set up our data to be passed into the YOLO model
+rf = Roboflow(api_key=...)
+project = rf.workspace("roboflow-jvuqo").project("football-players-detection-3zvbc")
+version = project.version(1)
+dataset = version.download("yolov5")
 
-# load in & structure VGG16 network architecture (global pooling)
-vgg = VGG16(input_shape = (img_width, img_height, num_channels), include_top = False, pooling = 'avg')
-model = Model(inputs = vgg.input, outputs = vgg.layers[-1].output)
+#enusre that directory is set up to be read correctly by model
+data_forms = ['train','test','valid']
+folder_location = dataset.location
+add_on = 'football-players-detection-1'
 
-# save model file
-model.save('models/vgg16_search_engine.h5')
+#move train, test, and validation folders from one location to another utilising shutil
+for i,j in enumerate(data_forms):
+  shutil.move(folder_location+'/'+data_forms[i],folder_location+'/'+add_on+'/'+data_forms[i])
 
 ```
-<br>
-The architecture can be seen below:
-<br>
-```
 
-_________________________________________________________________
-Layer (type)                 Output Shape              Param #   
-=================================================================
-input_2 (InputLayer)         [(None, 224, 224, 3)]     0         
-_________________________________________________________________
-block1_conv1 (Conv2D)        (None, 224, 224, 64)      1792      
-_________________________________________________________________
-block1_conv2 (Conv2D)        (None, 224, 224, 64)      36928     
-_________________________________________________________________
-block1_pool (MaxPooling2D)   (None, 112, 112, 64)      0         
-_________________________________________________________________
-block2_conv1 (Conv2D)        (None, 112, 112, 128)     73856     
-_________________________________________________________________
-block2_conv2 (Conv2D)        (None, 112, 112, 128)     147584    
-_________________________________________________________________
-block2_pool (MaxPooling2D)   (None, 56, 56, 128)       0         
-_________________________________________________________________
-block3_conv1 (Conv2D)        (None, 56, 56, 256)       295168    
-_________________________________________________________________
-block3_conv2 (Conv2D)        (None, 56, 56, 256)       590080    
-_________________________________________________________________
-block3_conv3 (Conv2D)        (None, 56, 56, 256)       590080    
-_________________________________________________________________
-block3_pool (MaxPooling2D)   (None, 28, 28, 256)       0         
-_________________________________________________________________
-block4_conv1 (Conv2D)        (None, 28, 28, 512)       1180160   
-_________________________________________________________________
-block4_conv2 (Conv2D)        (None, 28, 28, 512)       2359808   
-_________________________________________________________________
-block4_conv3 (Conv2D)        (None, 28, 28, 512)       2359808   
-_________________________________________________________________
-block4_pool (MaxPooling2D)   (None, 14, 14, 512)       0         
-_________________________________________________________________
-block5_conv1 (Conv2D)        (None, 14, 14, 512)       2359808   
-_________________________________________________________________
-block5_conv2 (Conv2D)        (None, 14, 14, 512)       2359808   
-_________________________________________________________________
-block5_conv3 (Conv2D)        (None, 14, 14, 512)       2359808   
-_________________________________________________________________
-block5_pool (MaxPooling2D)   (None, 7, 7, 512)         0         
-_________________________________________________________________
-global_average_pooling2d (Gl (None, 512)               0         
-=================================================================
-Total params: 14,714,688
-Trainable params: 14,714,688
-Non-trainable params: 0
-_________________________________________________________________
-
-```
 <br>
-If we hadn't added that last parameter of "pooling = avg" then the final layer would have been that MaxPoolingLayer of shape 7 by 7 by 512. Instead however, the Global Average Pooling logic was added, and this means we get that single array that is of size 512.  In other words, all of the feature maps from that final Max Pooling layer are summarised down into one vector of 512 numbers, and for each image these numbers will represent it's features. This feature vector is what we will be using to compare our base set of images, to any given search image to assess the similarity!
+Our data comes with a .yaml file that provides important information on the class breakdown of the training, testing and validation datasets in use
 
 ___
 <br>
