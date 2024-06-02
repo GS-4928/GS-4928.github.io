@@ -1,6 +1,6 @@
 ---
 layout: post
-title: **In Progress** Utilising Computer Vision to Track Player Movement in a Football Match
+title: In Progress - Utilising Computer Vision to Track Player Movement in a Football Match
 image: "/posts/football-pitch-title.jpg"
 tags: [CV2, YOLO, Data Science, Computer Vision, Python, OOP]
 ---
