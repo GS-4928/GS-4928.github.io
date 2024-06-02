@@ -29,6 +29,7 @@ After the model has been trained, we can begin to write some python code to crea
 
 <br>
 ___
+
 # Data Overview  <a name="data-overview"></a>
 
 There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches. The initial exploration of this data showed a potential problem - none of the potential objects are labelled within it! For basic purposes this is fine, but as we expand the capabilities of our scripting we will want to introduce some tracking features that require an associated tracking id to be present with each object.
