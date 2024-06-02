@@ -28,9 +28,7 @@ We move through different data sets within this project, starting off with a kag
 After the model has been trained, we can begin to write some python code to create classes and functions to successfully turn a blank video clip of a football match into a fully annotated, gameified visual experience!
 
 <br>
-<br>
 ___
-
 # Data Overview  <a name="data-overview"></a>
 
 There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches. The initial exploration of this data showed a potential problem - none of the potential objects are labelled within it! For basic purposes this is fine, but as we expand the capabilities of our scripting we will want to introduce some tracking features that require an associated tracking id to be present with each object.
@@ -38,13 +36,8 @@ There are lots of possible data sources that we could choose from. Initially, in
 To this end, we will utilise **RoboFlow** to choose and download a similar dataset for us to work on, the difference being that this new dataset will have each object of interest tagged for ease of tracking later on down the line.
 
 Enough about the data for now, we need to explore what exactly Object Detection is!
-
 <br>
-We will need to extract & capture the "features" of this base image set, and compare them to the "features" found in any given search image.  The images with the closest match will be returned to the customer!
-
 ___
-<br>
-
 # Object Detection Overview  <a name="object-detection-overview"></a>
 
 <br>
