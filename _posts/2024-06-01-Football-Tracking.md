@@ -105,7 +105,13 @@ results = model.predict(input_video, save=True)
 
 <br>
 
-The above code demonstrates how simple it can be to get started with a YOLO model, utilising the ultralytics python library. The next step from here is to download the desired, labelled dataset from roboflow and pass it through to train our model. The training set expects our data to be in a specific form, sitting in a folder of the same name as its current folder otherwise it will crash when attempting to run!
+The above code demonstrates how simple it can be to get started with a YOLO model, utilising the ultralytics python library. Running our input video through this model shows that it is capable of identifying people and items within the frame, but that it doesn't provide some of the context that we would need for a football match.
+
+<br>
+![alt text](/img/posts/Model-without-tracking.png "Model output without tracking information")
+<br>
+
+The next step from here is to download the desired, labelled dataset from roboflow and pass it through to train our model. The training set expects our data to be in a specific form, sitting in a folder of the same name as its current folder otherwise it will crash when attempting to run! 
 
 ```python
 
@@ -146,57 +152,52 @@ The above command can be broken down into its constituent parts:
 6. imgsz = 640, we can set the size of our input images
 
 The output of this training, besides annotated images, is a pair of models labelled 'best' and 'last' that contain the best performing run nad the last performed run respectively. If we feed our training video into this best model of ours, we can immediately see some differences in performance and identification!
+
+<br>
+![alt text](/img/posts/Model-with-tracking.png "Model Output With Tracking Information Courtesy of Roboflow")
 <br>
 ___
 
 # Creating our Python Script <a name="script-creation"></a>
 
-To be able to both input and outpt video files for training through our 
+#### Video Input and Output
+To be able to both input and outpt video files from our model, we can employ the cv2 library to write a reading and saving video function.
 
 ```python
+#looping over our input video to store our frames within a list
+import cv2
 
-# image pre-processing function
-def preprocess_image(filepath):
-    
-    image = load_img(filepath, target_size = (img_width, img_height))
-    image = img_to_array(image)
-    image = np.expand_dims(image, axis = 0)
-    image = preprocess_input(image)
-    
-    return image
+def read_video(video_path):
+    cap = cv2.VideoCapture(video_path)
+    frames = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)
+    return frames
 
-# image featurisation function
-def featurise_image(image):
-    
-    feature_vector = model.predict(image)
-    
-    return feature_vector
-
+#loop over our video frames and output the frames
+def save_video(output_video_frames,output_video_path):
+    #define an output format
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(output_video_path,fourcc,24,
+                          (output_video_frames[0].shape[1],output_video_frames[0].shape[0]))
+    for frame in output_video_frames:
+        out.write(frame)
+    out.release()
 ```
 <br>
-The *preprocess_image* function does the following:
+The video reading and saving functions are being saved in the utils folder within our folder structure. Creating an __init__.py file to expose our functions to the wider contents of our folders, including the main body of our function, main.py. We now have the logic in place to read our videos in and save them, what needs to be done is to add in the detection (keeping note of the bounding box/class of subjects in the video) and tracking (logic to tell us which bounding box belongs to which subject from frame to frame) aspects of the model. There are different ways of carrying this out and we will try to use a mix of visual features and predictions on the movement of each subject!
 
-* Receives the filepath of an image
-* Loads the image in
-* Turns the image into an array
-* Adds in the "batch" dimension for the array that Keras is expecting
-* Applies the custom pre-processing logic for VGG16 that we imported from Keras
-* Returns the image as an array
-
-The *featurise_image* function does the following:
-
-* Receives the image as an array
-* Passes the array through the VGG16 architecture
-* Returns the feature vector
 
 <br>
-#### Setup
+#### Tracking
 
-In the code below, we:
-
-* Specify the directory of the base-set of images
-* Set up empty list to append our image filenames (for future lookup)
-* Set up empty array to append our base-set feature vectors
+For the tracking across our video, we can create a Tracker class to house the different functions that we want available to perform over our file.
+With the initialisation of our Tracker object we will do two things:
+1. set up an instance of our best model
+2. set up a ByteTrack tracker for the object
 
 ```python
 
