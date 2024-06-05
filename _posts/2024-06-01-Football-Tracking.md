@@ -21,8 +21,9 @@ After completing projects based on Neural Networks and how they can be leveraged
     - [Transforming the Camera View](#view-transform)
     - [Speed and Distance Estimator](#speed-distance-estimator)
 - [05. Pulling it All Together](#combination)
+- [06. Discussion, Growth & Next Steps](#growth-next-steps)
 
-___
+<br>
 
 # Project Overview  <a name="overview-main"></a>
 
@@ -33,7 +34,6 @@ We move through different data sets within this project, starting off with a kag
 After the model has been trained, we can begin to write some python code to create classes and functions to successfully turn a blank video clip of a football match into a fully annotated, gameified visual experience!
 
 <br>
-___
 
 # Data Overview  <a name="data-overview"></a>
 
@@ -46,8 +46,8 @@ To this end, we will utilise **RoboFlow** to choose and download a similar datas
 <br>
 
 Enough about the data for now, we need to explore what exactly Object Detection is!
+
 <br>
-___
 
 # Object Detection Overview  <a name="object-detection-overview"></a>
 
@@ -82,7 +82,7 @@ Deep Learning, specifically the arrival of Convolutional Neural Networks and its
 
 For this project, we will be utilising a One-Shot Detector model called YOLO, a multi-object detection algorithm.
 
-___
+<br>
 
 # Setting Up YOLO Instance  <a name="YOLO-setup"></a>
 
@@ -165,7 +165,6 @@ The output of this training, besides annotated images, is a pair of models label
 <br>
 ![alt text](/img/posts/Model-with-tracking.png "Model Output With Tracking Information Courtesy of Roboflow")
 <br>
-___
 
 # Creating our Python Script <a name="script-creation"></a>
 
@@ -224,7 +223,6 @@ Creating an __init__.py file to expose our functions to the wider contents of ou
 
 For ease of deployment within our main script, I decided to create a set of classes containing the requisite functions that will be needed to implement our desired annotations!
 
-___
 <br>
 
 #### Tracking Class <a name="tracker"></a>
@@ -278,7 +276,6 @@ For a full look at the code used within this class as well as the others employe
 
 We've covered the tracking information that we need to pull out from this, now we need to cover which team has the ball to ensure that our annotaitons are correct!
 
-___
 <br>
 
 #### Assigning Teams and Ball Possession <a name="camera-movement"></a>
@@ -310,7 +307,6 @@ class TeamAssigner:
 ```
 A smaller class than the tracker class previously created, this will allow us to produce a clustering model for each player within a video, deduce the colour for each player and assign colours for each team based on these sets of colours. Finally, we want to then assign each player to a respective team. For the goalkeeper of the white team specifically, I decided to hardcode his team id to match the wider team as the kmeans model had a difficult time differentiating between the two teams for the goalkeeper.
 
-___
 <br>
 
 #### Compensating for Camera Movement <a name="ball-possession"></a>
@@ -359,7 +355,6 @@ class CameraMovementEstimator:
 ```
 The initialisation of this class selects a range of pixels across the image that should be unobstructed by movement within the running of the clip, allowing for comparative calculation of camera movement. It also sets parameters for use within cv2 functions that will help with calculating the positional movement of the camera and the subsequent adjustments that need to be made.
 
-___
 <br>
 #### Transforming the Camera View <a name="view-transform"></a>
 
@@ -408,7 +403,6 @@ class ViewTransformer():
 
 Within the initilisation of this class, we preset some variables to define the real length and width of a section of the pitch, and then map them to the corresponding pixels within the video. We do this as we want to effectively transform the shape of the uneven trapezoid that represents our pitch section into a match for the real dimensions of that rectangular area within our video frame. To this end we employ a perspective transformation thanks to cv2 that we can call later throughout the class methods. There are only two methods contained within here; one to transform points based on the perspective transformer and another to leverage this point transformer to adjust the positional tracking information for each object within the tracking dictionary we have already set up.
 
-___
 <br>
 #### Speed and Distance Estimation <a name="speed-distance-estimator"></a>
 
@@ -432,7 +426,6 @@ class SpeedAndDistanceEstimator():
 ```
 With this class we have everything we need to take in raw video files and, through the application of our pre-trained YOLO model, output a tracked, annotated video file showing statistical information about the flow of the football game!
 
-___
 <br>
 # Pulling it All Together <a name="combination"></a>
 
@@ -557,8 +550,7 @@ And that does it! Running this code will take in our input video and annotate it
 ![alt text](/img/posts/output-video-frame.png "Final Video Output Frame")
 <br>
 
-___
-<br>
+
 # Discussion, Growth & Next Steps <a name="growth-next-steps"></a>
 
 If this were to be put into production as a scouting tool for use by clubs, there could be further development scope to create a web applcation through something like Streamlit or Shiny to allow for the input of raw video clips that then produce annotated output clips with information on possession, speed and distance travelled.
