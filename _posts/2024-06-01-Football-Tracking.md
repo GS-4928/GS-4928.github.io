@@ -14,8 +14,13 @@ After completing projects based on Neural Networks and how they can be leveraged
 - [02. Object Detection Overview](#object-detection-overview)
 - [03. Setting Up YOLO Instance](#YOLO-setup)
 - [04. Creating our Python Script](#script-creation)
-- [05. Execute Search](#execute-search)
-- [06. Discussion, Growth & Next Steps](#growth-next-steps)
+      - [Utility Functions](#utils)
+      - [Tracking Class](#tracking)
+      - [Assigning Teams and Ball Possession](#ball-possession)
+      - [Compensating for Camera Movement](#camera-movement)
+      - [Transforming the Camera View](#view-transform)
+      - [Speed and Distance Estimation](#speed-distance-estimator)
+- [05. Pulling it All Together](#combination)
 
 ___
 
@@ -34,7 +39,11 @@ ___
 
 There are lots of possible data sources that we could choose from. Initially, investigation began on a Kaggle data set : DFL - Bundesliga Data Shootout. This data had a large selection of 30 second clips from german first division football matches. The initial exploration of this data showed a potential problem - none of the potential objects are labelled within it! For basic purposes this is fine, but as we expand the capabilities of our scripting we will want to introduce some tracking features that require an associated tracking id to be present with each object.
 
-To this end, we will utilise **RoboFlow** to choose and download a similar dataset for us to train our model on, the difference being that this new dataset will have each object of interest tagged for ease of tracking later on down the line.
+To this end, we will utilise **RoboFlow** to choose and download a similar dataset for us to train our model on, the difference being that this new dataset will have each object of interest tagged for ease of tracking later on down the line. Below is a frame from the input video that we will be working on with our trained model.
+
+<br>
+![alt text](/img/posts/Input-video-frame.png "Initial Input Video Frame")
+<br>
 
 Enough about the data for now, we need to explore what exactly Object Detection is!
 <br>
@@ -160,7 +169,7 @@ ___
 
 # Creating our Python Script <a name="script-creation"></a>
 
-#### Video Input and Output
+#### Utility Functions <a name="utils"></a>
 To be able to both input and outpt video files from our model, we can employ the cv2 library to write a reading and saving video function.
 
 ```python
@@ -188,211 +197,371 @@ def save_video(output_video_frames,output_video_path):
     out.release()
 ```
 <br>
-The video reading and saving functions are being saved in the utils folder within our folder structure. Creating an __init__.py file to expose our functions to the wider contents of our folders, including the main body of our function, main.py. We now have the logic in place to read our videos in and save them, what needs to be done is to add in the detection (keeping note of the bounding box/class of subjects in the video) and tracking (logic to tell us which bounding box belongs to which subject from frame to frame) aspects of the model. There are different ways of carrying this out and we will try to use a mix of visual features and predictions on the movement of each subject!
-
-
-<br>
-#### Tracking
-
-For the tracking across our video, we can create a Tracker class to house the different functions that we want available to perform over our file.
-With the initialisation of our Tracker object we will do two things:
-1. set up an instance of our best model
-2. set up a ByteTrack tracker for the object
+The video reading and saving functions are being saved in the utils folder within our folder structure. We're going to add another bunch of utility functions around objects within each video frame.
 
 ```python
+def get_box_centre(bbox):
+    #cast dimensions of bbox to coords
+    x1,y1,x2,y2 = bbox
+    #find centre point
+    return int((x1+x2)/2),int((y1+y2)/2)
 
-# source directory for base images
-source_dir = 'data/'
+def get_box_width(bbox):
+    #return x2 minus x1 for width
+    return (bbox[2] - bbox[0])
 
-# empty objects to append to
-filename_store = []
-feature_vector_store = np.empty((0,512))
+def measure_distance(p1,p2):
+    return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)**0.5
 
+def measure_xy_distance(p1,p2):
+    return p1[0]-p2[0],p1[1]-p2[1]
+
+def get_foot_position(bbox):
+    x1,y1,x2,y2 = bbox
+    return int((x1+x2)/2),int(y2)
 ```
+Creating an __init__.py file to expose our functions to the wider contents of our folders, including the main body of our function, main.py. We now have the logic in place to read our videos in and save them, what needs to be done is to add in the detection (keeping note of the bounding box/class of subjects in the video) and tracking (logic to tell us which bounding box belongs to which subject from frame to frame) aspects of the model. There are different ways of carrying this out and we will try to use a mix of visual features and predictions on the movement of each subject!
 
-<br>
-#### Preprocess & Featurise Base-Set Images
-
-We now want to preprocess & feature all 300 images in our base-set.  To do this we execute a loop and apply the two functions we created earlier.  For each image, we append the filename, and the feature vector to stores.  We then save these stores, for future use when a search is executed.
-
-```python
-
-# pass in & featurise base image set
-for image in listdir(source_dir):
-    
-    print(image)
-    
-    # append image filename for future lookup
-    filename_store.append(source_dir + image)
-    
-    # preprocess the image
-    preprocessed_image = preprocess_image(source_dir + image)
-    
-    # extract the feature vector
-    feature_vector = featurise_image(preprocessed_image)
-    
-    # append feature vector for similarity calculations
-    feature_vector_store = np.append(feature_vector_store, feature_vector, axis = 0)
-
-# save key objects for future use
-pickle.dump(filename_store, open('models/filename_store.p', 'wb'))
-pickle.dump(feature_vector_store, open('models/feature_vector_store.p', 'wb'))
-
-```
+For ease of deployment within our main script, I decided to create a set of classes containing the requisite functions that will be needed to implement our desired annotations!
 
 ___
 <br>
-# Execute Search <a name="execute-search"></a>
 
-With the base-set featurised, we can now run a search on a new image from a customer!
+#### Tracking Class <a name="tracker"></a>
 
-<br>
-#### Setup
-
-In the code below, we:
-
-* Load in our VGG16 model
-* Load in our filename store & feature vector store
-* Specify the search image file
-* Specify the number of search results we want
+First up is a class to enable tracking of players, referees and the football itself.
 
 ```python
 
-# load in required objects
-model = load_model('models/vgg16_search_engine.h5', compile = False)
-filename_store = pickle.load(open('models/filename_store.p', 'rb'))
-feature_vector_store = pickle.load(open('models/feature_vector_store.p', 'rb'))
+#create new tracker class
+class Tracker:
+    def __init__(self, model_path):
+        #model set up on initiation
+        self.model = YOLO(model_path)
+        #tracker set up on instantiation
+        self.tracker = sv.ByteTrack()
 
-# search parameters
-search_results_n = 8
-search_image = 'search_image_02.jpg'
+    #add position to tracks
+    def add_position_to_tracks(self, tracks): ...
+
+    #employ interpolation to fill in missing ball positions
+    def interpolate_ball_position(self, ball_positions): ...
+       
+    #detect frames from our video files
+    def detect_frames(self, frames): ...
+        
+    #function to draw an ellipse around the players
+    def draw_ellipse(self, frame, bbox, colour, track_id=None): ...
+    
+    #function to draw a triangle above the ball
+    def draw_triangle(self, frame, bbox, colour): ...
+        
+    #function to draw team possession stats
+    def draw_team_possession(self, frame, frame_num, team_possession): ...
+        
+    #function to retrieve object tracks, either from existing stub or by running the code
+    def get_object_tracks(self, frames, read_from_stub=False, stub_path=None): ...
+       
+    #annotate the frames, using the drawing functions defined above
+    def draw_annotations(self,video_frames,tracks, team_possession): ...
 
 ```
-<br>
-The search image we are going to use for illustration here is below:
+For a full look at the code used within this class as well as the others employed, please check my github profile! Outside of the initialisation function which sets up an instance of our pre-trained model with an instance of a tracker courtesy of the pyhton library supervision, we have 8 methods that can be used by members of this class:
+1. get_object_tracks - if this is being run for the first time, set up dictionaries for the players, referees and ball that we can then append tracking information to. If these tracks already exist, then we can load them before exiting the function
+2. add_position_to_tracks - passing through the obtained tracking information and linking it up with an associated bounding box for each object within frame
+3. interpolate_ball_position - for when the bounding box of the ball isn't found within the tracking information, we can carry out interpolation to fill in the gaps
+4. detect_frames - we want to pass through video data and then apply our pre-trained model to provide tracking information and predictions of objects within the frame
+5. draw_ellipse - around the players within the image we want to draw an allipse beneath their feet that follows them as they move. If a track_id is given then we also want to add this to our annotation as well (this will be used for our players, something different will be employed for the ball and the referees will be ignored!)
+6. draw_triangle - speaking of tracking the ball, this is what the triangle will be used for! Appearing as a small triangle above the ball and taking advantage of the interpolated ball position to more closely follow its movement
+7. draw_team_possession - counting the number of frames that each team has possession of the ball for, followed with an annotation to show this changing statistic across the duration of the clip. We will explore how to calculate team possession through another Class
+8. draw_annotations - pull all of this information together into one cohesive annotation applied to each frame, utilising the previous functions created
 
+We've covered teh tracking information that we need to pull out from this, now we need to cover which team has the ball to ensure that our annotaitons are correct!
+___
 <br>
-![alt text](/img/posts/search-engine-search1.jpg "VGG16 Architecture")
 
+#### Assigning Teams and Ball Possession <a name="camera-movement"></a>
+
+Here's where we rely on a trusty machine learning technique: clustering! To determine which team has possession of the ball at any one time, we can take the bounding box for each player and perform k-means clustering to determine the shirt colour of within that bounding box. As all members of the same team, apart from the goalkeeper, are wearing the same colour, we can determine which player belongs to which team and then calculate our desired statistics from there, as well as inform our tracking data more fully!
+
+```python
+#create class to assign players to teams
+class TeamAssigner:
+
+    def __init__(self):
+        #set up dictionary of team colours
+        self.team_colours = {}
+        #set up dictionary of which player belongs to which team
+        self.player_team_dict = {}
+
+    #function to produce our clustering model for each image
+    def get_clustering_model(self, image):...
+
+    #function deciding on the colour of each player
+    def get_player_colour(self, frame, bbox):...
+
+    #function to assign team colours based on player colours
+    def assign_team_colour(self, frame, player_detections):...
+
+    #function to assign players to each team
+    def get_player_team(self, frame, player_bbox, player_id):...
+    
+```
+A smaller class than the tracker class previously created, this will allow us to produce a clustering model for each player within a video, deduce the colour for each player and assign colours for each team based on these sets of colours. Finally, we want to then assign each player to a respective team. For the goalkeeper of the white team specifically, I decided to hardcode his team id to match the wider team as the kmeans model had a difficult time differentiating between the two teams for the goalkeeper.
+
+___
 <br>
-#### Preprocess & Featurise Search Image
 
-Using the same helper functions, we apply the preprocessing & featurising logic to the search image - the output again being a vector containing 512 numeric values.
+#### Compensating for Camera Movement <a name="ball-possession"></a>
+
+Whilst we have a good chunk of the information we need to provide tracking details and possession details on the football match as it goes on, what we don't have a way of doing yet is estimating the distances and speeds at which the players are moving. To begin this process, we need to account for the position and movement of the camera taking the video. The reason for this is that we want to adjust the positions of the players within the frame to take account of how the camera moves, ensuring that the tracking information we have is more accurate. This will involve estimating the camera movement at any one time and subtracting it from a players' current position that is already stored within one of our tracking dictionaries.
 
 ```python
 
-# preprocess & featurise search image
-preprocessed_image = preprocess_image(search_image)
-search_feature_vector = featurise_image(preprocessed_image)
+class CameraMovementEstimator:
+    
+    def __init__(self,frame):
 
+        #minimum camera movement
+        self.minimum_distance = 5
+        #specify lk params
+        self.lk_params = dict(
+            winSize = (15,15),
+            maxLevel = 2,
+            criteria = (cv2.TermCriteria_EPS | cv2.TermCriteria_COUNT, 10, 0.03)
+        )
+
+        first_frame_greyscale = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+        #choosing features from the top and bottom of the frame that shouldn't be obstructed by movement
+        mask_features = np.zeros_like(first_frame_greyscale)
+        #slicing out so we have the top 20 rows of pixels and the bottom banners
+        mask_features[:,0:20] = 1
+        mask_features[:,900:1050] = 1
+
+        #setting up dictionary to use for feature extraction
+        self.features = dict(
+            maxCorners = 100,
+            qualityLevel = 0.3,
+            minDistance = 3,
+            blockSize = 7,
+            mask = mask_features
+        )
+
+    #adjust object positions to account for camera movement
+    def adjust_positions_to_tracks(self,tracks,camera_movement_per_frame):...
+
+    #determine the camera movement
+    def get_camera_movement(self,frames,read_from_Stub=False,stub_path=None):...
+
+    #annotate each frame with this live camera movement
+    def draw_camera_movement(self,frames,camera_movement_per_frame):...
 ```
+The initialisation of this class selects a range of pixels across the image that should be unobstructed by movement within the running of the clip, allowing for comparative calculation of camera movement. It also sets parameters for use within cv2 functions that will help with calculating the positional movement of the camera and the subsequent adjustments that need to be made.
 
+___
 <br>
-#### Locate Most Similar Images Using Cosine Similarity
+#### Transforming the Camera View <a name="view-transform"></a>
 
-At this point, we have our search image existing as a 512 length feature vector, and we need to compare that feature vector to the feature vectors of all our base images.
-
-When that is done, we need to understand which of those base image feature vectors are most like the feature vector of our search image, and more specifically, we need to return the eight most closely matched, as that is what we specified above.
-
-To do this, we use the *NearestNeighbors* class from *scikit-learn* and we will apply the *Cosine Distance* metric to calculate the angle of difference between the feature vectors.
-
-**Cosine Distance** essentially measures the angle between any two vectors, and it looks to see whether the two vectors are pointing in a similar direction or not.  The more similar the direction the vectors are pointing, the smaller the angle between them in space and the more different the direction the LARGER the angle between them in space. This angle gives us our cosine distance score.
-
-By calculating this score between our search image vector and each of our base image vectors, we can be returned the images with the eight lowest cosine scores - and these will be our eight most similar images, at least in terms of the feature vector representation that comes from our VGG16 network!
-
-In the code below, we:
-
-* Instantiate the Nearest Neighbours logic and specify our metric as Cosine Similarity
-* Apply this to our *feature_vector_store* object (that contains a 512 length feature vector for each of our 300 base-set images)
-* Pass in our *search_feature_vector* object into the fitted Nearest Neighbors object.  This will find the eight nearest base feature vectors, and for each it will return (a) the cosine distance, and (b) the index of that feature vector from our *feature_vector_store* object.
-* Convert the outputs from arrays to lists (for ease when plotting the results)
-* Create a list of filenames for the eight most similar base-set images
+The perspective of our camera works well to capture a larger area of the football pitch for watchers at home, but raises issues for us if we want to accurately estimate the speed and distance that objects are travelling at within frame. Items further back in the frame are shortened and narrowed due to the perspective whilst items closer to the front of the frame appear larger and wider. This perspective change needs to be compensated for.
 
 ```python
 
-# instantiate nearest neighbours logic
-image_neighbours = NearestNeighbors(n_neighbors = search_results_n, metric = 'cosine')
+class ViewTransformer():
 
-# apply to our feature vector store
-image_neighbours.fit(feature_vector_store)
+    def __init__(self):
+        #width of football pitch
+        pitch_w = 68
+        #length of segment of football pitch
+        pitch_l = 23.32
 
-# return search results for search image (distances & indices)
-image_distances, image_indices = image_neighbours.kneighbors(search_feature_vector)
+        #provide the position of the points that map with this section of the pitch
+        self.pixel_verticies = np.array([
+            [110,1035],
+            [265,275],
+            [910,260],
+            [1640,915]
+        ])
 
-# convert closest image indices & distances to lists
-image_indices = list(image_indices[0])
-image_distances = list(image_distances[0])
+        #provide the target corners of the size of the pitch that the trapezoid corresponds to
+        self.target_verticies = np.array([
+            [0,pitch_w],
+            [0,0],
+            [pitch_l,0],
+            [pitch_l,pitch_w]
+        ])
 
-# get list of filenames for search results
-search_result_files = [filename_store[i] for i in image_indices]
+        #cast each set of corners as floats
+        self.pixel_verticies = self.pixel_verticies.astype(np.float32)
+        self.target_verticies = self.target_verticies.astype(np.float32)
+
+        #transform the image into the desired measurements
+        self.perpective_transformer = cv2.getPerspectiveTransform(self.pixel_verticies,self.target_verticies)
+
+    #transform the points based on transformer
+    def transform_point(self,point):...
+
+    #add this transformed position to the tracks dictionary
+    def add_transformed_position_to_tracks(self, tracks):...
 
 ```
 
+Within the initilisation of this class, we preset some variables to define the real length and width of a section of the pitch, and then map them to the corresponding pixels within the video. We do this as we want to effectively transform the shape of the uneven trapezoid that represents our pitch section into a match for the real dimensions of that rectangular area within our video frame. To this end we employ a perspective transformation thanks to cv2 that we can call later throughout the class methods. There are only two methods contained within here; one to transform points based on the perspective transformer and another to leverage this point transformer to adjust the positional tracking information for each object within the tracking dictionary we have already set up.
+___
 <br>
-#### Plot Search Results
+#### Speed and Distance Estimation <a name="speed-distance-estimator"></a>
 
-We now have all of the information about the eight most similar images to our search image - let's see how well it worked by plotting those images!
-
-We plot them in order from most similar to least similar, and include the cosine distance score for reference (smaller is closer, or more similar)
+Nearly there! One of the final steps to do before tying all our classes and utility functions together is the estimation of speed and distance travelled by eaech player throughout the duration of our input video. With our cmaera movement estimator set up, we can compensate for the skewed perspective of our input video to estimate distances and speeds more accurately. The only bit of hard coding within the upcoming class will be the frame rate of our input video and the number of frames that we want to be measuring our speed and distance changes over.
 
 ```python
 
-# plot search results
-plt.figure(figsize=(20,15))
-for counter, result_file in enumerate(search_result_files):    
-    image = load_img(result_file)
-    ax = plt.subplot(3, 3, counter+1)
-    plt.imshow(image)
-    plt.text(0, -5, round(image_distances[counter],3), fontsize=28)
-    ax.get_xaxis().set_visible(False)
-    ax.get_yaxis().set_visible(False)
-plt.show()
+class SpeedAndDistanceEstimator():
+
+    def __init__(self):
+        #define window to measure speed over
+        self.frame_window = 5
+        self.frame_rate = 24
+
+  #calculate the speed and distance travelled from previous positions within each frame and add these to the tracking dictionary
+  def add_speed_and_distance_to_tracks(self,tracks):...
+
+  #annotate the frame with these stats
+  def draw_speed_distance_annotations(self,video_frames,tracks):...
 
 ```
-<br>
-The search image, and search results are below:
+With this class we have everything we need to take in raw video files and, through the application of our pre-trained YOLO model, output a tracked, annotated video file showing statistical information about the flow of the football game!
 
-**Search Image**
+___
 <br>
-![alt text](/img/posts/search-engine-search1.jpg "Search 1: Search Image")
-<br>
-<br>
-**Search Results**
-![alt text](/img/posts/search-engine-search1-results.png "Search 1: Search Results")
+# Pulling it All Together <a name="combination"></a>
+
+We have the tools now to convert an input video into a fully annotated out put video! Before anything, we need to import all of our classes and other libraries that will be needed for this to run successfully.
+
+```python
+
+import cv2
+from utils import read_video, save_video, measure_distance
+from trackers import Tracker
+from team_assigner import TeamAssigner
+from ball_possession import BallPossession
+import numpy as np
+from camera_movement_estimator import CameraMovementEstimator
+from view_transformer import ViewTransformer
+from speed_and_distance_estimator import SpeedAndDistanceEstimator
+```
+With these classes and libraries available, we can read in our video from its file path, and begin the process of tracking objects within the frames
+
+```python
+def main():
+    #read in video from our input video folder
+    video_frames = read_video(input_file_path)
+
+    #initialise tracker
+    tracker = Tracker(model_file_path)
+
+    #track our video frames
+    tracks = tracker.get_object_tracks(video_frames,
+                                       read_from_stub=True,
+                                       stub_path=stub_file_path)
+    
+    #calculate object positions
+    tracker.add_position_to_tracks(tracks)
+```
+Our tracking dictionaries will be fully populated now for each frame of our input video. Adjustments due to the movement of the camera cna be made next
+
+```python
+    #track the camera movement
+    camera_movement_estimator = CameraMovementEstimator(video_frames[0])
+    camera_movement_per_frame = camera_movement_estimator.get_camera_movement(video_frames,
+                                                                              read_from_stub=True,
+                                                                              stub_path =camera_stub_path)
+    
+    #adjust positions to account for camera movement
+    camera_movement_estimator.adjust_positions_to_tracks(tracks, camera_movement_per_frame)
+```
+We want to ensure that the camera view is transformed to take account of the perspective issues, and then update the tracking information for the ball to include the interpolated information that will be calculated for missing frames
+
+```python
+    #transform view to reflect true dimensions of pitch
+    view_transformer = ViewTransformer()
+    view_transformer.add_transformed_position_to_tracks(tracks)
+
+    #interpolate the position of the ball for each missing frame
+    tracks['ball'] = tracker.interpolate_ball_position(tracks['ball'])
+```
+Setting up the speed and distance estimator class comes next, followed by an instance of the team assigning class to allow us to prepare to calculate the possession of the ball. With this team assigner, we can loop through each frame to allocate our players to the appropriate teams
+
+```python
+    #estimate speed and distance travelled
+    speed_and_distance_estimator = SpeedAndDistanceEstimator()
+    speed_and_distance_estimator.add_speed_and_distance_to_tracks(tracks)
+
+    #assign players to teams
+    team_assigner = TeamAssigner()
+    team_assigner.assign_team_colour(video_frames[0],
+                                     tracks['players'][0])
+    
+    #for each player, assign a team and appropriate team colour
+    for frame_num, player_track in enumerate(tracks['players']):
+        for player_id, track in player_track.items():
+            team = team_assigner.get_player_team(video_frames[frame_num],
+                                                 track['bbox'],
+                                                 player_id)
+            
+            tracks['players'][frame_num][player_id]['team'] = team
+            tracks['players'][frame_num][player_id]['team_colour'] = team_assigner.team_colours[team]
+```
+Next comes our posession figures, utilising the ball possession class we created earlier.
+
+```python
+    #assign ball possession
+    ball_possession = BallPossession()
+    team_possession = []
+
+    for frame_num, player_track in enumerate(tracks['players']):
+        #pull out ball bounding box
+        ball_bbox = tracks['ball'][frame_num][1]['bbox']
+        #see which player is closest to the ball
+        assigned_player = ball_possession.assign_ball_possession(player_track, ball_bbox)
+
+        #if the assigned player value has changed, update the possession of the ball
+        if assigned_player != -1:
+            tracks['players'][frame_num][assigned_player]['has_ball'] = True
+            team_possession.append(tracks['players'][frame_num][assigned_player]['team'])
+        else:
+            team_possession.append(len(team_possession))
+
+    #cast the possession to a numpy array for use within the annotations
+    team_possession = np.array(team_possession)
+```
+The final line above transformed the possession figures into an array, so that we can pass it through our drawing functions without raising an error. This is the final step: drawing our tracking information, the camera movement and the statistical information about the players and teams. The only thing to do after that is to save our output video frames.
+
+```python
+    #draw object tracks
+    output_video_frames = tracker.draw_annotations(video_frames,tracks, team_possession)
+
+    #draw camera movement
+    output_video_frames = camera_movement_estimator.draw_camera_movement(output_video_frames,
+                                                                        camera_movement_per_frame)
+    
+    #draw speed and distance
+    speed_and_distance_estimator.draw_speed_distance_annotations(output_video_frames,tracks)
+    #save our video
+    save_video(output_video_frames, 'Output_Videos/08fd33_4_output_final.avi')
+```
+
+And that does it! Running this code will take in our input video and annotate it to produce this!
 
 <br>
-Very impressive results!  From the 300 base-set images, these are the eight that have been deemed to be *most similar*!
-
+![alt text](/img/posts/output-video-frame.png "Final Video Output Frame")
 <br>
-Let's take a look at a second search image...
-
-**Search Image**
-<br>
-![alt text](/img/posts/search-engine-search2.jpg "Search 2: Search Image")
-<br>
-<br>
-**Search Results**
-![alt text](/img/posts/search-engine-search2-results.png "Search 2: Search Results")
-
-<br>
-Again, these have come out really well - the features from VGG16 combined with Cosine Similarity have done a great job!
-
 ___
 <br>
 # Discussion, Growth & Next Steps <a name="growth-next-steps"></a>
 
-The way we have coded this up is very much for the "proof of concept".  In practice we would definitely have the last section of the code (where we submit a search) isolated, and running from all of the saved objects that we need - we wouldn't include it in a single script like we have here.
+If this were to be put into production as a scouting tool for use by clubs, there could be further development scope to create a web applcation through something like Streamlit or Shiny to allow for the input of raw video clips that then produce annotated output clips with information on possession, speed and distance travelled.
 
-Also, rather than having to fit the Nearest Neighbours to our *feature_vector_store* each time a search is submitted, we could store that object as well.
+Depending on stakeholder feedback, future functionality surrounding number of passes, direction of pass, length of pass and other analytical metrics could be included to create a more holistic output with a wider ranging use for a recruitment department. As an proof of concept though, it works well! A more finely tuned model explicitly trained on football matches may provide a slight performance improvement, if only for the ball tracking an occassional goalkeeper identification issue, but the YOLOv5 model performed as needed for this project, thanks to the benefits of transfer learning within CNNs.
 
-When applying this in production, we also may want to code up a script that easily adds or removes images from the feature store.  The products that are available in the clients store would be changing all the time, so we'd want a nice easy way to add new feature vectors to the feature_vector_store object - and also potentially a way to remove search results coming back if that product was out of stock, or no longer part of the suite of products that were sold.
+I think that this type of model is widely applicable to most pitch based sports that are televised/videoed, with some tweaks to the initial training of the pre-defined model depending on the data (hockey, rugby, lacrosse etc.)
 
-Most likely, in production, this would just return a list of filepaths that the client's website could then pull forward as required - the matplotlib code is just for us to see it in action manually!
-
-This was tested only in one category, we would want to test on a broader array of categories - most likely having a saved network for each to avoid irrelevant predictions.
-
-We only looked at Cosine Similarity here, it would be interesting to investigate other distance metrics.
-
-It would be beneficial to come up with a way to quantify the quality of the search results.  This could come from customer feedback, or from click-through rates on the site.
-
-Here we utilised VGG16. It would be worthwhile testing other available pre-trained networks such as ResNet, Inception, and the DenseNet networks.
+Overall, I'm proud of this work, and I hope it's been interesting for oyu to read along! For a full breakdown of the code used, visit my github page.
