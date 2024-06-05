@@ -13,13 +13,13 @@ After completing projects based on Neural Networks and how they can be leveraged
 - [01. Data Overview](#data-overview)
 - [02. Object Detection Overview](#object-detection-overview)
 - [03. Setting Up YOLO Instance](#YOLO-setup)
-- [04. Creating our Python Script](#script-creation)
-      - [Utility Functions](#utils)
-      - [Tracking Class](#tracking)
-      - [Assigning Teams and Ball Possession](#ball-possession)
-      - [Compensating for Camera Movement](#camera-movement)
-      - [Transforming the Camera View](#view-transform)
-      - [Speed and Distance Estimation](#speed-distance-estimator)
+- [04. Creating our Python Script](#overview-main)
+    - [Utility Functions](#utils)
+    - [Tracking Class](#tracker)
+    - [Assigning Teams and Ball Possession](#ball-possession)
+    - [Compensating for Camera Movements](#camera-movement)
+    - [Transforming the Camera View](#view-transform)
+    - [Speed and Distance Estimator](#speed-distance-estimator)
 - [05. Pulling it All Together](#combination)
 
 ___
@@ -276,7 +276,8 @@ For a full look at the code used within this class as well as the others employe
 7. draw_team_possession - counting the number of frames that each team has possession of the ball for, followed with an annotation to show this changing statistic across the duration of the clip. We will explore how to calculate team possession through another Class
 8. draw_annotations - pull all of this information together into one cohesive annotation applied to each frame, utilising the previous functions created
 
-We've covered teh tracking information that we need to pull out from this, now we need to cover which team has the ball to ensure that our annotaitons are correct!
+We've covered the tracking information that we need to pull out from this, now we need to cover which team has the ball to ensure that our annotaitons are correct!
+
 ___
 <br>
 
@@ -406,6 +407,7 @@ class ViewTransformer():
 ```
 
 Within the initilisation of this class, we preset some variables to define the real length and width of a section of the pitch, and then map them to the corresponding pixels within the video. We do this as we want to effectively transform the shape of the uneven trapezoid that represents our pitch section into a match for the real dimensions of that rectangular area within our video frame. To this end we employ a perspective transformation thanks to cv2 that we can call later throughout the class methods. There are only two methods contained within here; one to transform points based on the perspective transformer and another to leverage this point transformer to adjust the positional tracking information for each object within the tracking dictionary we have already set up.
+
 ___
 <br>
 #### Speed and Distance Estimation <a name="speed-distance-estimator"></a>
@@ -554,6 +556,7 @@ And that does it! Running this code will take in our input video and annotate it
 <br>
 ![alt text](/img/posts/output-video-frame.png "Final Video Output Frame")
 <br>
+
 ___
 <br>
 # Discussion, Growth & Next Steps <a name="growth-next-steps"></a>
@@ -564,4 +567,4 @@ Depending on stakeholder feedback, future functionality surrounding number of pa
 
 I think that this type of model is widely applicable to most pitch based sports that are televised/videoed, with some tweaks to the initial training of the pre-defined model depending on the data (hockey, rugby, lacrosse etc.)
 
-Overall, I'm proud of this work, and I hope it's been interesting for oyu to read along! For a full breakdown of the code used, visit my github page.
+Overall, I'm proud of this work, and I hope it's been interesting for you to read! For a full breakdown of the code used, visit my github page.
