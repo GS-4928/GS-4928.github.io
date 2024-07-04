@@ -5,7 +5,7 @@ image: "/posts/football-pitch-title.jpg"
 tags: [CV2, YOLO, Data Science, Computer Vision, Python, OOP]
 ---
 
-After completing projects based on Neural Networks and how they can be leveraged for image classification, I wanted to work on further Computer Vision tasks! This project is the result of that desire; leveraging open source python libraries to track and produce stats on players in a clip from a football match. Utilising Object Detection will allow for the location of instances of specific objects within an image or video, in this case football players, referees and the football itself.
+A scouting department at a lower league football club wants to leverage computer vision and analytics to improve their scouting abilities but do not have the resources to carry out this work in house. They have comelooking for assistance on this matter, wanting a prototype modelling approach to identify players, positions and teams within a football match and provide some basic statistics on the passage of play, with a view to developing further capabilites of the model for their own analytics.
 
 # Table of contents
 
@@ -27,11 +27,9 @@ After completing projects based on Neural Networks and how they can be leveraged
 
 # Project Overview  <a name="overview-main"></a>
 
-I wanted to learn more about object detection as a field of computer vision, seeing how it has evolved and what some of the current approaches are. As I'm a long suffering football fan, I thought that I would combine the two of these into a project!
+We move through different data sets within this project, starting off with a kaggle data set of Bundesliga clips before settling on a labelled dataset from RoboFlow, an open source community for all things computer vision and object detection. Once our data is decided upon, we can utilise it to train up our YOLOv5 model, a model purpose built for real time object detection and the precision of its detections.
 
-We move through different data sets within this project, starting off with a kaggle data set of Bundesliga clips before settling on a labelled dataset from RoboFlow, an open source community for all things computer vision. Once our data is decided upon, we can utilise it to train up our YOLOv5 model, a model purpose built for real time object detection and the precision of its detections.
-
-After the model has been trained, we can begin to write some python code to create classes and functions to successfully turn a blank video clip of a football match into a fully annotated, gameified visual experience!
+After the model has been trained, we can begin to write some python code to create classes and functions to successfully turn a blank video clip of a football match into a fully annotated scouting clip that has scope for further development!
 
 <br>
 
@@ -559,4 +557,4 @@ Depending on stakeholder feedback, future functionality surrounding number of pa
 
 I think that this type of model is widely applicable to most pitch based sports that are televised/videoed, with some tweaks to the initial training of the pre-defined model depending on the data (hockey, rugby, lacrosse etc.)
 
-Overall, I'm proud of this work, and I hope it's been interesting for you to read! For a full breakdown of the code used, visit my github page.
+With further data and feedback on specific statistical requirements, this approach can be customsied and improved on to no end!
