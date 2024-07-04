@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Utilising Computer Vision to Track Player Movements
+title: Developing an Object Detection Model for a Football Scouting Department
 image: "/posts/football-pitch-title.jpg"
 tags: [CV2, YOLO, Data Science, Computer Vision, Python, OOP]
 ---
