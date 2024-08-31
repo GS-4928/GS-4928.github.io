@@ -22,7 +22,7 @@ avatar_image: /img/IMG_Square.jpg
 
 #-------------------------------
 # Contact links
-linkedln: "https://www.linkedin.com/in/george-slade/" # Add your linkedln handle
+linkedin: "https://www.linkedin.com/in/george-slade/" # Add your linkedln handle
 github: "https://github.com/GS-4928/"  # Add your github handle
 
 paginate: 6
