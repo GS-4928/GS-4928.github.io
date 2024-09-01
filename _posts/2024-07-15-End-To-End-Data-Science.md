@@ -1,7 +1,7 @@
 ---
 layout: post
 title: End-To-End Data Science Project: 
-image: "/posts/ab-testing-title-img.png"
+image: "/posts/end-to-end1.jpg"
 tags: [Data Science, Data Validation, Business Requirements, Python]
 ---
 In this end-to-end data science project, we investigated recipe popularity for a meal subscription service to see what insights could be uncovered to drive further website traffic and subscriptions to the business! 
