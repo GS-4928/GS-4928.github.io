@@ -23,11 +23,14 @@ ___
 
 ### Context <a name="overview-context"></a>
 
-The product team at Tasty Bytes want our help with analysing and then predicting which recipes will be popular within their available catalogue. Picking a popular recipe to display on the homepage of the Tasty Bytes website can increase traffic to the rest of the website by up to 40%! The asks from the product team are to:
+The product team at a meal subscription service provider want our help with analysing and then predicting which recipes will be popular within their available catalogue.
+
+Picking a popular recipe to display on the homepage of the website can increase traffic to the rest of the website by up to 40%, according to testing carried out by the Product Team!
+
+The asks from the product team are to:
 - Predict which recipes will lead to high traffic for the website.
 - Correctly predict these high traffic recipes 80% of the time.
 
-<br>
 <br>
 
 ### Actions <a name="overview-actions"></a>
@@ -41,7 +44,6 @@ With exploratory analysis completed, the dataset was manipulated into a form tha
 Precision was the chosen metric as the product team was concerned with correctly identifying the recipes that drove high traffic to the rest of the website from the recipes that did not. This will be expanded upon later on!
 
 <br>
-<br>
 
 ### Results & Discussion <a name="overview-results"></a>
 
@@ -54,9 +56,7 @@ Recommendations were made to evaluate the suitability of current recipes for dis
 The potential for A/B testing of recipe display on the homepage and the effect that it could have on driving traffic to the rest of the website was aos offered as another avenue of exploration for the product team.
 
 <br>
-<br>
-___
-
+____
 <br>
 
 # Data Validation & Preparation  <a name="data-overview"></a>
@@ -76,7 +76,6 @@ We can load in this data via python and begin to check it over.
 <br>
 
 ```python
-
 #import packages for data validation
 import pandas as pd
 import numpy as np
@@ -85,7 +84,6 @@ import numpy as np
 recipes = pd.read_csv(...)
 #look at summary information on the dataframe
 print(recipes.info())
-
 ```
 <br>
 Information on each column within the dataset can be seen below:
@@ -104,7 +102,6 @@ Information on each column within the dataset can be seen below:
 | 7 | high_traffic | 574 non-null | object |
 
 ___
-
 <br>
 
 #### 0. recipe
@@ -112,12 +109,10 @@ ___
 The recipe column seems to be in the form we want it, containing 947 unique integer numbers each corresponding to a different recipe. We should check whether there are any duplicated recipes within this dataset though.
 
 ```python
-
 #check for duplicates
 print(f"{recipes.duplicated(subset='recipe').sum()} Duplicates")
 
 >>0 Duplicates
-
 ```
 <br>
 
@@ -126,7 +121,6 @@ print(f"{recipes.duplicated(subset='recipe').sum()} Duplicates")
 The calories column is also numeric, this time in decimal form, but with missing values present in the column. What percentage of the column is composed of missing values?
 
 ```python
-
 #check percentage of missing values in calorie column
 missing_percentage = round(100*recipes['calories'].isna().sum()/len(recipes),2)
 
@@ -134,7 +128,6 @@ missing_percentage = round(100*recipes['calories'].isna().sum()/len(recipes),2)
 print(f"Calorie Column Mising/Null Values: {missing_percentage}%")
 
 >>Calorie Column Missing/Null Values: 5.49%
-
 ```
 We have ~5.5% of our calorie column being taken by missing/null values (52 rows), but from the initial information on the dataset it seems that all of the nutritional columns have the same number of missing values! Lets check the data frame for null values to see what the link is.
 
@@ -142,7 +135,7 @@ We have ~5.5% of our calorie column being taken by missing/null values (52 rows)
 #check where values are missing, and display the first five rows
 recipes[recipes['calories'].isna().head()]
 ```
-|  | **recipe** | **calories** | **carbohydrate** | **sugar** | **protein** | **category** | **servings** | **high_traffic** |
+| # | **recipe** | **calories** | **carbohydrate** | **sugar** | **protein** | **category** | **servings** | **high_traffic** |
 |---|---|---|---|---|---|---|---|---|
 | 0 | 1 | NaN | NaN | NaN | NaN | Pork | 6 | High |
 | 23 | 24 | NaN | NaN | NaN | NaN | Meat | 6 | NaN |
@@ -191,7 +184,7 @@ The category column is currently present as a categorical column, which should h
 print(recipes['category'].value_counts())
 ```
 
-| **category** |  |
+| **category** | **count** |
 |---|---|
 | Breakfast | 106 |
 | Chicken Breast | 94 |
@@ -218,7 +211,7 @@ recipes['category'] = recipes['category'].astype('category')
 recipes['category'].value_counts()
 ```
 
-| **category** |  |
+| **category** | **count** |
 |---|---|
 | Chicken | 163 |
 | Breakfast | 106 |
@@ -280,13 +273,13 @@ recipes['high_traffic'] = recipes['high_traffic'].astype('category')
 recipes['high_traffic'].value_counts()
 ```
 
-| **high_traffic**|
+| **high_traffic**| **count** |
 |---|---|
 | True | 535 |
 | False | 360 |
 
 Our dataframe has now been cleaned and validated into the desired form!
-
+<br>
 ___
 <br>
 
@@ -400,6 +393,7 @@ Conversely, Carbohydrate sees the highest values across meals without a specific
 Sugar is topped by dessert by a long margin, but these peak values across the food groups do not map directly onto a higher calorie value, with protein being the closest approximation.
 
 ___
+<br>
 
 Coming back to the business objective in this assignment, we should compare what drives high and low traffic to the Tasty Bytes website, using the different categories and servings for each recipe.
 
@@ -434,7 +428,7 @@ print(norm_categories_table)
 
 | **high_traffic** | **False** | **True** |
 |---|---|---|
-| category |---|---|
+| **category** |---|---|
 | Beverages | 0.945652 | 0.054348 |
 | Breakfast | 0.688679 | 0.311321 |
 | Chicken | 0.576687 | 0.423313 |
@@ -464,7 +458,7 @@ plt.show()
 ```
 
 <br>
-![alt text](/img/posts/high_traffic_by_serving.png "High Traffic Recipe Servings")
+![alt text](/img/posts/high_traffic_by_servings.png "High Traffic Recipe Servings")
 <br>
 
 On a magnitude level, 4 servings and 6 servings are the most popular recipes, with 4 comfortably largest. 1 and 2 servings are at a similar level of popularity to each other, behind 4 and 6.
@@ -483,7 +477,7 @@ print(norm_servings_table)
 
 | **high_traffic** | **False** | **True** |
 |---|---|---|
-| servings |---|---|
+| **servings** |---|---|
 | 1 | 0.414201 | 0.585799 |
 | 2 | 0.436782 | 0.563218 |
 | 4 | 0.400545 | 0.599455 |
@@ -493,6 +487,7 @@ Proportionally, we see that 6 servings is the highest in popularity for driving 
 
 However the difference between the highest and lowest proportion is only ~7%, so perhaps there is not too much of a link between the serving portions per recipe and the traffic driven to the Tasty Bytes website.
 
+___
 <br>
 
 Before we begin modelling, we should check if there is any correlation between features within this dataset that we should be concerned about.
@@ -513,6 +508,7 @@ plt.show()
 ```
 <br>
 ![alt text](/img/posts/pairplot.png "Correlation Between Features in Dataset")
+<br>
 <br>
 
 This pairplot confirms for us that there is no strong correlation between our numeric features and whether high traffic is driven to the website.
@@ -560,6 +556,7 @@ plt.show()
 
 <br>
 ![alt text](/img/posts/boxplot.png "Boxplots for Nutritional Columns")
+<br>
 <br>
 
 The whiskers of each box plot are at the 95th percentile and 5th percentile respectively.
@@ -664,6 +661,7 @@ plt.show()
 <br>
 ![alt text](/img/posts/transformed_data_histplot.png "Transformed Data")
 <br>
+<br>
 
 A busy visual! The important thing to note is that the Yeo-Johnson distributions, the left most column of histograms, much more closely approximate a normal distribution across each column.
 
@@ -674,7 +672,7 @@ ___
 
 #### Converting Categorical Variables
 
-With our data in the form we expected it to be, we now want to change our categorical columns into a format that will be usable for modelling, through the process of creating dummy variables! These dummy variables encode a single column into a selection of binary ones, returning a one if the category is present and a 0 if not.
+With our data in the form we expected it to be, we now want to change our categorical columns into a format that will be usable for modelling, through the process of creating dummy variables! These dummy variables encode a single column into a selection of binary ones, returning a 1 if the category is present and a 0 if not.
 
 ```python
 #create dummy variables from category column
@@ -713,6 +711,7 @@ recipes_model['high_traffic'] = np.where(recipes_model['high_traffic']=='True',1
 #look at resultant dataframe
 recipes_model.info()
 ```
+<br>
 
 | **#** | **Column** | **Non-Null Count** | **Dtype** |
 |---|---|---|---|
@@ -761,6 +760,7 @@ y = recipes_model['high_traffic']
 #split out into training and test data
 X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,stratify=y,random_state=42)
 ```
+<br>
 
 With our data split and ready for modeling, we can create a function to evaluate the models to see which performs best for the business use case provided by the product team.
 
@@ -800,10 +800,12 @@ def model_fitting_metrics(model, X_train, X_test, y_train, y_test):
 def print_metrics(metrics,model_type):
     print(f"{model_type}\n======\nAccuracy Score: {metrics[0]}\nPrecision Score: {metrics[1]}\nRecall Score: {metrics[2]}\nF1 Score: {metrics[3]}\nConfusion Matrix:\n {metrics[4]}\n")    
 ```
+<br>
 
 #### Model Choices
 
 A wide selection of models were chosen for this testing, 9 in total! These range from a simple logistic regression model up through to hyper parameter tuning models, that iterate through a selection of model parameters to find the most optimal selection of values to produce the best model score. The model score that we are concerned with is precision, so that will be our metric of choice. I'll give an example of fitting and predicting the baseline model, after which the results will be summarised.
+<br>
 
 ```python
 #Logistic Regression model
@@ -814,11 +816,20 @@ logm_metrics = model_fitting_metrics(logm,X_train,X_test,y_train,y_test)
 print_metrics(logm_metrics['train'],'Logistic Regression - Train')
 print_metrics(logm_metrics['test'],'Logistic Regression - Test')
 ```
+<br>
 
-| **Logistic Regression - Train** | **Logistic Regression - Test** |
-|---|---|---|---|---|---|---|---|
-| Accuracy | Precision | Recall | F1 | Accuracy | Precision | Recall | F1|
-| 0.75139 | 0.79206 | 0.79206 | 0.79206| 0.74860 | 0.82979 | 0.72897 | 0.77612 |
+| **Logistic Regression - Train** | **Score** |
+|---|---|
+| Accuracy | 0.75139 |
+| Precision | 0.79206 |
+| Recall | 0.79206 |
+| F1 | 0.79206 |
+|---|---|
+| **Logistic Regression - Test** | **Score** |
+| Accuracy | 0.74860 |
+| Precision | 0.82979 |
+| Recall | 0.72897 |
+| F1 | 0.77612 |
 
 <br>
 Our initial model already meets the requirements laid out by the product team, with a precision score over 80%! Let's compare this to the other model precision scores.
@@ -829,13 +840,13 @@ As previously mentioned, the main metric that the product team is concerned with
 
 In other words, the number of True Positive (TP) predictions divided by the sum of True Positive and Flse Positive (FP) predictions.
 
-$$Precision = \frac{TP}{TP+FP}$$
+$`Precision = \frac{TP}{TP+FP}`$
 
 Let's have a look at the precision scores for each of the models that we have tested. We will include the F1 score as well - a more generalised score of model performance that balances accurate predictions of correct values **AND** incorrect values, just to see how each model compares.
 
 <br>
 
-| **Model** | **Precision Score/%** | **F1 Score/%** |
+| **Model** | **Precision Score (%)** | **F1 Score (%)** |
 |---|---|---|
 | Logistic Regression | 82.98 | 77.61 |
 | Tuned Gradient Boosting | 82.95 | 74.87 |
