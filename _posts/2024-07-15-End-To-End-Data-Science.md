@@ -55,7 +55,6 @@ Recommendations were made to evaluate the suitability of current recipes for dis
 
 The potential for A/B testing of recipe display on the homepage and the effect that it could have on driving traffic to the rest of the website was aos offered as another avenue of exploration for the product team.
 
-<br>
 ____
 <br>
 
