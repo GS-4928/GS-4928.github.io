@@ -9,15 +9,15 @@ plugins:
 #-------------------------------
 # General Site Settings
 title: George Slade
-description: "Hi I'm George, and I'm a Data Scientist. My portfolio focuses on interesting projects with a strong emphasis on business impact and practical applications. Please visit my Github & LinkedIn pages (or download my Resume) by using the links below!"
+description: "Hi I'm George, and I'm a Data Analytics Professional. My portfolio focuses on interesting projects with a strong emphasis on business impact and practical applications. Please visit my Github & LinkedIn pages (or download my Resume) by using the links below!"
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 
 #-------------------------------
 # About Section
-subtitle: Data Science <span style="color:#f58506"> Portfolio </span>
+subtitle: Data Analytics <span style="color:#f58506"> Portfolio </span>
 location: "London, UK"
-resume_url: /docs/George_Slade_CV_2023_1.pdf
+resume_url: /docs/George_Slade_CV_2024_10.pdf
 avatar_image: /img/IMG_Square.jpg
 
 #-------------------------------
